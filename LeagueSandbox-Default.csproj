@@ -45,6 +45,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Buffs\AhriCharm\AhriCharm.cs" />
     <Compile Include="Buffs\Blind\Blind.cs" />
     <Compile Include="Buffs\BotrkBuff\BotrkBuff.cs" />
     <Compile Include="Buffs\Disarm\Disarm.cs" />
@@ -75,6 +76,10 @@
     <Compile Include="Buffs\Stun\Stun.cs" />
     <Compile Include="Buffs\TristanaQ\TristanaQ.cs" />
     <Compile Include="Buffs\YoumusBlade\YoumusBlade.cs" />
+    <Compile Include="Champions\Ahri\Constants.cs" />
+    <Compile Include="Champions\Ahri\E.cs" />
+    <Compile Include="Champions\Ahri\Q.cs" />
+    <Compile Include="Champions\Ahri\R.cs" />
     <Compile Include="Champions\Akali\E.cs" />
     <Compile Include="Champions\Akali\Passive.cs" />
     <Compile Include="Champions\Akali\Q.cs" />
