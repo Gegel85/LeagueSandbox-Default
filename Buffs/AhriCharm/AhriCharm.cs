@@ -32,6 +32,7 @@ namespace AhriCharm
             unit.RemoveCrowdControl(_silence);
             unit.RemoveCrowdControl(_disarm);
             ApiFunctionManager.CancelDash(unit);
+            ApiFunctionManager.DashToLocation(unit, unit.X, unit.Y, 1000, true);
         }
 
         public void OnUpdate(double diff)
