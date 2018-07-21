@@ -1,11 +1,14 @@
 ﻿using LeagueSandbox.GameServer.Logic.GameObjects;
 using LeagueSandbox.GameServer.Logic.API;
-using LeagueSandbox.GameServer.Logic.GameObjects.AttackableUnits;
 using LeagueSandbox.GameServer.Logic.Scripting.CSharp;
-using LeagueSandbox.GameServer;
-using LeagueSandbox.Champions.Ahri;
+using LeagueSandbox.GameServer.Logic.GameObjects.AttackableUnits.AI;
+using LeagueSandbox.GameServer.Logic.GameObjects.AttackableUnits;
+using LeagueSandbox.GameServer.Logic.GameObjects.Spells;
+using LeagueSandbox.GameServer.Logic.GameObjects.Missiles;
 using System.Numerics;
+using LeagueSandbox.Champions.Ahri;
 using System.Linq;
+using LeagueSandbox.GameServer;
 
 namespace Spells
 {
@@ -35,7 +38,7 @@ namespace Spells
                 spell.SetCooldown(spell.Slot, AhriConsts.DASH_BASE_CD - spell.Level * AhriConsts.DASH_CD_SCALING);
                 hasBeenReduced = false;
                 used = 0;
-                ApiFunctionManager.RemoveBuffHUDVisual(dashesBuff);
+                ApiFunctionManager.RemoveBuffHudVisual(dashesBuff);
                 ApiFunctionManager.RemoveParticle(dashParticule);
             }
         }
@@ -55,7 +58,7 @@ namespace Spells
             if (used == 0)
             {
                 dashParticule = ApiFunctionManager.AddParticleTarget(owner, "AhriSpiritRushReady_tar.troy", owner);
-                dashesBuff = ApiFunctionManager.AddBuffHUDVisual("AhriTumble", AhriConsts.DASH_EXPIRATION_TIME, 2, owner);
+                dashesBuff = ApiFunctionManager.AddBuffHudVisual("AhriTumble", AhriConsts.DASH_EXPIRATION_TIME, 2, owner);
                 ApiFunctionManager.CreateTimer(10, DesactivateSpell);
                 used = used + 1;
             }
@@ -63,13 +66,13 @@ namespace Spells
             {
                 ApiFunctionManager.EditBuff(dashesBuff, 1);
                 used = used + 1;
-                owner.GetStats().CurrentMana += AhriConsts.DASH_MANA_COST;
+                owner.Stats.CurrentMana += AhriConsts.DASH_MANA_COST;
             }
             else
             {
                 needsToReduce = false;
                 DesactivateSpell();
-                owner.GetStats().CurrentMana += AhriConsts.DASH_MANA_COST;
+                owner.Stats.CurrentMana += AhriConsts.DASH_MANA_COST;
             }
             ApiFunctionManager.DashToLocation(owner, dashLocation.X, dashLocation.Y, AhriConsts.DASH_SPEED, false, "Spell4");
         }
@@ -83,14 +86,12 @@ namespace Spells
             AttackableUnit[] targets = new AttackableUnit[3];
             bool foundUnit = false;
             
-            foreach (AttackableUnit enemyTarget in ApiFunctionManager.GetUnitsInRange(owner, AhriConsts.DASH_HIT_RANGE, true)
+            foreach (AttackableUnit enemyTarget in ApiFunctionManager.GetUnitsInRange(owner, 300, true)
                 .Where(x => x.Team == CustomConvert.GetEnemyTeam(owner.Team)))
             {
                 if (enemyTarget == null)
                     continue;
-                if (ApiFunctionManager.UnitIsChampion(enemyTarget) ||
-                    ApiFunctionManager.UnitIsMonster(enemyTarget) ||
-                    ApiFunctionManager.UnitIsMinion(enemyTarget))
+                if (enemyTarget is Champion || enemyTarget is Minion || enemyTarget is Monster)
                 {
                     foundUnit = false;
                     for (int i = 0; !foundUnit && i < targets.Length; i++)
@@ -104,7 +105,7 @@ namespace Spells
                     for (int i = 0; !foundUnit && i < targets.Length; i++)
                     {
                         if (owner.GetDistanceTo(enemyTarget) < owner.GetDistanceTo(targets[i]) ||
-                            (ApiFunctionManager.UnitIsChampion(enemyTarget) && !ApiFunctionManager.UnitIsChampion(targets[i])))
+                            (enemyTarget is Champion && !(targets[i] is Champion)))
                         {
                             targets[i] = enemyTarget;
                             foundUnit = true;
@@ -121,15 +122,15 @@ namespace Spells
 
         public void ApplyEffects(Champion owner, AttackableUnit target, Spell spell, Projectile projectile)
         {
-            float bonusDamages = owner.GetStats().AbilityPower.Total * AhriConsts.DASH_AP_RATIO;
+            float bonusDamages = owner.Stats.AbilityPower.Total * AhriConsts.DASH_AP_RATIO;
             float baseDamage = AhriConsts.DASH_BASE_DAMAGES + AhriConsts.DASH_DAMAGES_LEVEL_SCALING * spell.Level;
             float totalDamages = baseDamage + bonusDamages;
 
-            if (((ObjAIBase)target).HasBuffGameScriptActive("AhriCharm", "AhriCharm"))
+            if (((ObjAiBase)target).HasBuffGameScriptActive("AhriCharm", "AhriCharm"))
                 totalDamages *= AhriConsts.E_AMPLIFIED_DAMAGES;
             ApiFunctionManager.AddParticleTarget(owner, "Ahri_SpiritRush_tar.troy", owner);
             target.TakeDamage(owner, totalDamages, DamageType.DAMAGE_TYPE_MAGICAL, DamageSource.DAMAGE_SOURCE_SPELL, false);
-            projectile.setToRemove();
+            projectile.SetToRemove();
         }
 
         public void OnUpdate(double diff)
@@ -138,7 +139,7 @@ namespace Spells
             {
                 hasBeenReduced = true;
                 needsToReduce = false;
-                spell.LowerCooldown(spell.Slot, spell.getCooldown() - AhriConsts.COOLDOWN_BETWEEN_DASHES);
+                spell.LowerCooldown(spell.Slot, spell.CurrentCooldown - AhriConsts.COOLDOWN_BETWEEN_DASHES);
             }
             if (isDashing && !owner.IsDashing)
             {
