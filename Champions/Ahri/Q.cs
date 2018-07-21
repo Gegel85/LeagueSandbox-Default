@@ -1,14 +1,14 @@
-﻿using LeagueSandbox.GameServer.Logic.GameObjects;
+﻿using System.Linq;
+using LeagueSandbox.GameServer.Logic.GameObjects;
 using LeagueSandbox.GameServer.Logic.API;
 using LeagueSandbox.GameServer.Logic.Scripting.CSharp;
+using LeagueSandbox.GameServer;
 using LeagueSandbox.GameServer.Logic.GameObjects.AttackableUnits.AI;
 using LeagueSandbox.GameServer.Logic.GameObjects.AttackableUnits;
 using LeagueSandbox.GameServer.Logic.GameObjects.Spells;
 using LeagueSandbox.GameServer.Logic.GameObjects.Missiles;
-using System.Numerics;
 using LeagueSandbox.Champions.Ahri;
-using System.Linq;
-using LeagueSandbox.GameServer;
+using System.Numerics;
 
 namespace Spells
 {
@@ -19,6 +19,7 @@ namespace Spells
         private Vector2 spellPositionToGo;
         private Projectile projectile;
         private bool isLaunched = false;
+        Projectile returnProj = null;
 
         public void OnActivate(Champion owner)
         {
@@ -53,25 +54,33 @@ namespace Spells
             float damages = AhriConsts.Q_BASE_DAMAGES + spell.Level * AhriConsts.Q_DAMAGES_LEVEL_SCALING + apDamages;
             
             if (((ObjAiBase)target).HasBuffGameScriptActive("AhriCharm", "AhriCharm"))
+            {
                 damages *= AhriConsts.E_AMPLIFIED_DAMAGES;
+            }
+
             ApiFunctionManager.AddParticleTarget(owner, "Ahri_Orb_tar.troy", owner);
             if (target == owner)
                 return;
             target.TakeDamage(owner, damages, DamageType.DAMAGE_TYPE_MAGICAL, DamageSource.DAMAGE_SOURCE_ATTACK, false);
         }
 
-        Projectile proj = null;
         public void OnUpdate(double diff)
         {
-
             if (isLaunched && projectile.Target == null)
             {
-                //proj = owner.GetSpellByName("AhriOrbReturn").AddProjectile("AhriOrbReturn", owner.X, owner.Y, false, spellPositionToGo.X, spellPositionToGo.Y);
-                proj = owner.GetSpellByName("AhriOrbReturn").AddProjectileTarget("AhriOrbReturn", owner, startX: spellPositionToGo.X, startY: spellPositionToGo.Y);
-                //proj = spell.AddProjectileTarget("AhriOrbReturn", owner, x: spellPositionToGo.X, y: spellPositionToGo.Y);
-                ApiFunctionManager.AddParticleTarget(owner, "Ahri_Orb_mis_02.troy", proj);
+                returnProj = owner.GetSpellByName("AhriOrbReturn").AddProjectileHitAllTargets("AhriOrbReturn", owner, spellPositionToGo);
                 ApiFunctionManager.DashToLocation(owner, owner.X, owner.Y, 1000, true);
+                ApiFunctionManager.AddParticleTarget(owner, "Ahri_Orb_mis_02.troy", returnProj);
                 isLaunched = false;
+            }
+            if (returnProj != null && returnProj.Target != null && !returnProj.IsToRemove())
+            {
+                //Setting move speed manually because doesn't work with config file
+                returnProj.SetMoveSpeed(returnProj.GetMoveSpeed() + 50);
+                if (returnProj.GetMoveSpeed() > 2600)
+                {
+                    returnProj.SetMoveSpeed(2600);
+                }
             }
         }
     }
@@ -98,16 +107,19 @@ namespace Spells
 
         public void ApplyEffects(Champion owner, AttackableUnit target, Spell spell, Projectile projectile)
         {
-            ApiFunctionManager.LogInfo("Hit " + target);
             float apDamages = owner.Stats.AbilityPower.Total * AhriConsts.Q_AP_RATIO;
-            float damages = AhriConsts.Q_BASE_DAMAGES + spell.Level * AhriConsts.Q_DAMAGES_LEVEL_SCALING + apDamages;
+            float damages = AhriConsts.Q_BASE_DAMAGES + owner.GetSpellByName("AhriOrbofDeception").Level * AhriConsts.Q_DAMAGES_LEVEL_SCALING + apDamages;
 
             if (((ObjAiBase)target).HasBuffGameScriptActive("AhriCharm", "AhriCharm"))
+            {
                 damages *= AhriConsts.E_AMPLIFIED_DAMAGES;
-            ApiFunctionManager.AddParticleTarget(owner, "Ahri_Orb_tar.troy", owner);
+            }
+
+            ApiFunctionManager.AddParticleTarget(owner, "Ahri_Orb_tar.troy", target);
             if (target == owner)
             {
                 projectile.SetToRemove();
+                projectile.Target = null;
                 return;
             }
             target.TakeDamage(owner, damages, DamageType.DAMAGE_TYPE_TRUE, DamageSource.DAMAGE_SOURCE_ATTACK, false);
