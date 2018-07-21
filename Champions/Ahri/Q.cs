@@ -1,10 +1,14 @@
 ﻿using LeagueSandbox.GameServer.Logic.GameObjects;
 using LeagueSandbox.GameServer.Logic.API;
-using LeagueSandbox.GameServer.Logic.GameObjects.AttackableUnits;
 using LeagueSandbox.GameServer.Logic.Scripting.CSharp;
-using LeagueSandbox.Champions.Ahri;
+using LeagueSandbox.GameServer.Logic.GameObjects.AttackableUnits.AI;
+using LeagueSandbox.GameServer.Logic.GameObjects.AttackableUnits;
+using LeagueSandbox.GameServer.Logic.GameObjects.Spells;
+using LeagueSandbox.GameServer.Logic.GameObjects.Missiles;
 using System.Numerics;
-using System.Collections.Generic;
+using LeagueSandbox.Champions.Ahri;
+using System.Linq;
+using LeagueSandbox.GameServer;
 
 namespace Spells
 {
@@ -45,10 +49,10 @@ namespace Spells
 
         public void ApplyEffects(Champion owner, AttackableUnit target, Spell spell, Projectile projectile)
         {
-            float apDamages = owner.GetStats().AbilityPower.Total * AhriConsts.Q_AP_RATIO;
+            float apDamages = owner.Stats.AbilityPower.Total * AhriConsts.Q_AP_RATIO;
             float damages = AhriConsts.Q_BASE_DAMAGES + spell.Level * AhriConsts.Q_DAMAGES_LEVEL_SCALING + apDamages;
             
-            if (((ObjAIBase)target).HasBuffGameScriptActive("AhriCharm", "AhriCharm"))
+            if (((ObjAiBase)target).HasBuffGameScriptActive("AhriCharm", "AhriCharm"))
                 damages *= AhriConsts.E_AMPLIFIED_DAMAGES;
             ApiFunctionManager.AddParticleTarget(owner, "Ahri_Orb_tar.troy", owner);
             if (target == owner)
@@ -69,14 +73,10 @@ namespace Spells
                 ApiFunctionManager.DashToLocation(owner, owner.X, owner.Y, 1000, true);
                 isLaunched = false;
             }
-            if (proj != null && proj.getMoveSpeed() < 2600)
-            {
-                proj.SetMoveSpeed(proj.getMoveSpeed() + 50);
-            }
         }
     }
 
-    public class AhriOrbReturn : GameScript
+    public class AhriOrbReturn : IGameScript
     {
         public Vector2 spellPositionToGo;
 
@@ -99,15 +99,15 @@ namespace Spells
         public void ApplyEffects(Champion owner, AttackableUnit target, Spell spell, Projectile projectile)
         {
             ApiFunctionManager.LogInfo("Hit " + target);
-            float apDamages = owner.GetStats().AbilityPower.Total * AhriConsts.Q_AP_RATIO;
+            float apDamages = owner.Stats.AbilityPower.Total * AhriConsts.Q_AP_RATIO;
             float damages = AhriConsts.Q_BASE_DAMAGES + spell.Level * AhriConsts.Q_DAMAGES_LEVEL_SCALING + apDamages;
 
-            if (((ObjAIBase)target).HasBuffGameScriptActive("AhriCharm", "AhriCharm"))
+            if (((ObjAiBase)target).HasBuffGameScriptActive("AhriCharm", "AhriCharm"))
                 damages *= AhriConsts.E_AMPLIFIED_DAMAGES;
             ApiFunctionManager.AddParticleTarget(owner, "Ahri_Orb_tar.troy", owner);
             if (target == owner)
             {
-                projectile.setToRemove();
+                projectile.SetToRemove();
                 return;
             }
             target.TakeDamage(owner, damages, DamageType.DAMAGE_TYPE_TRUE, DamageSource.DAMAGE_SOURCE_ATTACK, false);
