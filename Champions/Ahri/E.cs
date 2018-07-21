@@ -1,12 +1,12 @@
-﻿using System.Linq;
-using LeagueSandbox.GameServer.Logic.GameObjects;
+﻿using LeagueSandbox.GameServer.Logic.GameObjects;
 using LeagueSandbox.GameServer.Logic.API;
 using LeagueSandbox.GameServer.Logic.Scripting.CSharp;
-using LeagueSandbox.GameServer;
 using LeagueSandbox.GameServer.Logic.GameObjects.AttackableUnits.AI;
 using LeagueSandbox.GameServer.Logic.GameObjects.AttackableUnits;
 using LeagueSandbox.GameServer.Logic.GameObjects.Spells;
 using LeagueSandbox.GameServer.Logic.GameObjects.Missiles;
+using System.Numerics;
+using LeagueSandbox.Champions.Ahri;
 
 namespace Spells
 {
@@ -37,23 +37,23 @@ namespace Spells
 
         public void ApplyEffects(Champion owner, AttackableUnit target, Spell spell, Projectile projectile)
         {
-            BuffGameScriptController debuff = ((ObjAIBase)target).AddBuffGameScript("AhriCharm", "AhriCharm", spell);
+            BuffGameScriptController debuff = ((ObjAiBase)target).AddBuffGameScript("AhriCharm", "AhriCharm", spell);
             Particle charmParticle = ApiFunctionManager.AddParticleTarget(owner, "Ahri_Charm_buf.troy", target);
-            float apDamages = owner.GetStats().AbilityPower.Total * AhriConsts.E_AP_RATIO;
+            float apDamages = owner.Stats.AbilityPower.Total * AhriConsts.E_AP_RATIO;
             float damage = AhriConsts.E_BASE_DAMAGES + spell.Level * AhriConsts.E_DAMAGES_LEVEL_SCALING + apDamages;
             float time = AhriConsts.E_CC_TIME_BASE + AhriConsts.E_CC_TIME_SCALE * spell.Level;
-            Buff seduceBuff = ApiFunctionManager.AddBuffHUDVisual("AhriSeduce", time, 1, (ObjAIBase)target);
-            Buff doomBuff = ApiFunctionManager.AddBuffHUDVisual("AhriSeduceDoom", time, 1, (ObjAIBase)target);
-
-            projectile.setToRemove();
+            Buff seduceBuff = ApiFunctionManager.AddBuffHudVisual("AhriSeduce", time, 1, (ObjAiBase)target);
+            Buff doomBuff = ApiFunctionManager.AddBuffHudVisual("AhriSeduceDoom", time, 1, (ObjAiBase)target);
+            
+            projectile.SetToRemove();
             target.TakeDamage(owner, damage, DamageType.DAMAGE_TYPE_MAGICAL, DamageSource.DAMAGE_SOURCE_ATTACK, false);
             ApiFunctionManager.AddParticleTarget(owner, "Ahri_Charm_tar.troy", target);
             ApiFunctionManager.CreateTimer(time, () =>
             {
-                ApiFunctionManager.RemoveBuffHUDVisual(seduceBuff);
-                ApiFunctionManager.RemoveBuffHUDVisual(doomBuff);
+                ApiFunctionManager.RemoveBuffHudVisual(seduceBuff);
+                ApiFunctionManager.RemoveBuffHudVisual(doomBuff);
                 ApiFunctionManager.RemoveParticle(charmParticle);
-                ((ObjAIBase)target).RemoveBuffGameScript(debuff);
+                ((ObjAiBase)target).RemoveBuffGameScript(debuff);
             });
         }
 
