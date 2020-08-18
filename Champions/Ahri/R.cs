@@ -18,10 +18,11 @@ namespace Spells
         private Champion owner;
         private int used = 0;
         private bool isDashing = false;
-        private bool needsToReduce = false;
-        private bool hasBeenReduced = true;
+        private bool needsToReduceCooldown = false;
+        private bool cooldownHasBeenReduced = true;
         private Buff dashesBuff;
         private Particle dashParticule;
+        private GameScriptTimer timer;
         
         public void OnActivate(Champion owner)
         {
@@ -33,10 +34,10 @@ namespace Spells
 
         private void DesactivateSpell()
         {
-            if (hasBeenReduced)
+            if (cooldownHasBeenReduced)
             {
-                spell.SetCooldown(spell.Slot, AhriConsts.DASH_BASE_CD - spell.Level * AhriConsts.DASH_CD_SCALING);
-                hasBeenReduced = false;
+                spell.SetCooldown(spell.Slot, spell.GetCooldown());
+                cooldownHasBeenReduced = false;
                 used = 0;
                 ApiFunctionManager.RemoveBuffHudVisual(dashesBuff);
                 ApiFunctionManager.RemoveParticle(dashParticule);
@@ -49,30 +50,31 @@ namespace Spells
             Vector2 angleVector = Vector2.Normalize(new Vector2(spell.X, spell.Y) - currentPos);
             Vector2 range = angleVector * AhriConsts.DASH_RANGE;
             Vector2 dashLocation = currentPos + range;
-            
+
+            if (used == 0 && owner.Stats.CurrentMana < AhriConsts.DASH_MANA_COST)
+                return;
             this.spell = spell;
             this.owner = owner;
-            needsToReduce = true;
+            needsToReduceCooldown = true;
             isDashing = true;
             ApiFunctionManager.AddParticleTarget(owner, "Ahri_SpiritRush_cas.troy", owner);
             if (used == 0)
             {
                 dashParticule = ApiFunctionManager.AddParticleTarget(owner, "AhriSpiritRushReady_tar.troy", owner);
                 dashesBuff = ApiFunctionManager.AddBuffHudVisual("AhriTumble", AhriConsts.DASH_EXPIRATION_TIME, 2, owner);
-                ApiFunctionManager.CreateTimer(10, DesactivateSpell);
+                timer = ApiFunctionManager.CreateTimer(10, DesactivateSpell);
                 used = used + 1;
+                owner.Stats.CurrentMana -= AhriConsts.DASH_MANA_COST;
             }
             else if (used == 1)
             {
                 ApiFunctionManager.EditBuff(dashesBuff, 1);
                 used = used + 1;
-                owner.Stats.CurrentMana += AhriConsts.DASH_MANA_COST;
             }
             else
             {
-                needsToReduce = false;
-                DesactivateSpell();
-                owner.Stats.CurrentMana += AhriConsts.DASH_MANA_COST;
+                needsToReduceCooldown = false;
+                timer.EndTimerNow();
             }
             ApiFunctionManager.DashToLocation(owner, dashLocation.X, dashLocation.Y, AhriConsts.DASH_SPEED, false, "Spell4");
         }
@@ -135,10 +137,10 @@ namespace Spells
 
         public void OnUpdate(double diff)
         {
-            if (spell != null && needsToReduce)
+            if (spell != null && needsToReduceCooldown)
             {
-                hasBeenReduced = true;
-                needsToReduce = false;
+                cooldownHasBeenReduced = true;
+                needsToReduceCooldown = false;
                 spell.LowerCooldown(spell.Slot, spell.CurrentCooldown - AhriConsts.COOLDOWN_BETWEEN_DASHES);
             }
             if (isDashing && !owner.IsDashing)

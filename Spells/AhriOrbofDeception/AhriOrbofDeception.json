@@ -124,7 +124,7 @@
             "MissileEffect": "LuxLightstrike_mis.troy",
             "MissileFixedTravelTime": 0,
             "MissileGravity": 0,
-            "MissileLifetime": 0,
+            "MissileLifetime": 1000,
             "MissileMaxSpeed": "2500.0000",
             "MissileMinSpeed": "400.0000",
             "MissilePerceptionBubbleRadius": 0,

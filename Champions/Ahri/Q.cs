@@ -75,7 +75,7 @@ namespace Spells
             }
             if (returnProj != null && returnProj.Target != null && !returnProj.IsToRemove())
             {
-                //Setting move speed manually because doesn't work with config file
+                //Setting move speed manually because I can't get it to work with config file
                 returnProj.SetMoveSpeed(returnProj.GetMoveSpeed() + 50);
                 if (returnProj.GetMoveSpeed() > 2600)
                 {

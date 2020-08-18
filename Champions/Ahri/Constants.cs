@@ -25,14 +25,12 @@
         public const float E_AMPLIFIED_DAMAGES = 1.2f;
 
         //R Constants
-        public const int DASH_RANGE = 500;
+        public const int DASH_RANGE = 450;
         public const int DASH_SPEED = 1500;
         public const int DASH_HIT_RANGE = 750;
         public const int COOLDOWN_BETWEEN_DASHES = 1;
         public const int DASH_BASE_DAMAGES = 30;
         public const int DASH_DAMAGES_LEVEL_SCALING = 40;
-        public const int DASH_BASE_CD = 125;
-        public const int DASH_CD_SCALING = 15;
         public const int DASH_MANA_COST = 100;
         public const float DASH_EXPIRATION_TIME = 10f;
         public const float DASH_AP_RATIO = 0.3f;
